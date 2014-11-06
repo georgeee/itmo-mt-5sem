@@ -42,9 +42,11 @@ public class BankImpl implements Bank {
     public long getAmount(int index) {
         Account account = accounts[index];
         account.lock.lock();
-        long amount = account.amount;
-        account.lock.unlock();
-        return amount;
+        try {
+            return account.amount;
+        }finally {
+            account.lock.unlock();
+        }
     }
 
     /**
@@ -53,13 +55,16 @@ public class BankImpl implements Bank {
      */
     @Override
     public long getTotalAmount() {
-        long sum = 0;
         for (Account account : accounts) account.lock.lock();
-        for (Account account : accounts) {
-            sum += account.amount;
+        try {
+            long sum = 0;
+            for (Account account : accounts) {
+                sum += account.amount;
+            }
+            return sum;
+        }finally {
+            for (Account account : accounts) account.lock.unlock();
         }
-        for (Account account : accounts) account.lock.unlock();
-        return sum;
     }
 
     /**
@@ -72,13 +77,15 @@ public class BankImpl implements Bank {
             throw new IllegalArgumentException("Invalid amount: " + amount);
         Account account = accounts[index];
         account.lock.lock();
-        if (amount > MAX_AMOUNT || account.amount + amount > MAX_AMOUNT) {
+        try {
+            if (amount > MAX_AMOUNT || account.amount + amount > MAX_AMOUNT) {
+                throw new IllegalStateException("Overflow");
+            }
+            account.amount += amount;
+            return account.amount;
+        }finally {
             account.lock.unlock();
-            throw new IllegalStateException("Overflow");
         }
-        long resultingAccountAmount = (account.amount += amount);
-        account.lock.unlock();
-        return resultingAccountAmount;
     }
 
     /**
@@ -91,13 +98,15 @@ public class BankImpl implements Bank {
             throw new IllegalArgumentException("Invalid amount: " + amount);
         Account account = accounts[index];
         account.lock.lock();
-        if (account.amount - amount < 0) {
+        try {
+            if (account.amount - amount < 0) {
+                throw new IllegalStateException("Underflow");
+            }
+            account.amount -= amount;
+            return account.amount;
+        }finally {
             account.lock.unlock();
-            throw new IllegalStateException("Underflow");
         }
-        long resultingAccountAmount = (account.amount -= amount);
-        account.lock.unlock();
-        return resultingAccountAmount;
     }
 
     /**
@@ -121,19 +130,18 @@ public class BankImpl implements Bank {
         }
         lock1.lock();
         lock2.lock();
-        if (amount > from.amount) {
+        try {
+            if (amount > from.amount) {
+                throw new IllegalStateException("Underflow");
+            } else if (amount > MAX_AMOUNT || to.amount + amount > MAX_AMOUNT) {
+                throw new IllegalStateException("Overflow");
+            }
+            from.amount -= amount;
+            to.amount += amount;
+        }finally {
             lock2.unlock();
             lock1.unlock();
-            throw new IllegalStateException("Underflow");
-        } else if (amount > MAX_AMOUNT || to.amount + amount > MAX_AMOUNT) {
-            lock2.unlock();
-            lock1.unlock();
-            throw new IllegalStateException("Overflow");
         }
-        from.amount -= amount;
-        to.amount += amount;
-        lock2.unlock();
-        lock1.unlock();
     }
 
     /**
