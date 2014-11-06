@@ -44,7 +44,7 @@ public class BankImpl implements Bank {
         account.lock.lock();
         try {
             return account.amount;
-        }finally {
+        } finally {
             account.lock.unlock();
         }
     }
@@ -62,7 +62,7 @@ public class BankImpl implements Bank {
                 sum += account.amount;
             }
             return sum;
-        }finally {
+        } finally {
             for (Account account : accounts) account.lock.unlock();
         }
     }
@@ -83,7 +83,7 @@ public class BankImpl implements Bank {
             }
             account.amount += amount;
             return account.amount;
-        }finally {
+        } finally {
             account.lock.unlock();
         }
     }
@@ -104,7 +104,7 @@ public class BankImpl implements Bank {
             }
             account.amount -= amount;
             return account.amount;
-        }finally {
+        } finally {
             account.lock.unlock();
         }
     }
@@ -138,7 +138,7 @@ public class BankImpl implements Bank {
             }
             from.amount -= amount;
             to.amount += amount;
-        }finally {
+        } finally {
             lock2.unlock();
             lock1.unlock();
         }
